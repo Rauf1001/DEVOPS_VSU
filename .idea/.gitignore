@@ -1,4 +1,21 @@
-# Default ignored files
-/idea
-/shelf/
-/workspace.xml
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Java / Maven
+target/
+*.class
+
+# Frontend / Node
+node_modules/
+dist/
+.DS_Store
+
+.env

@@ -46,7 +46,7 @@ def process_message(cfg, body):
 
     with pg_connection(cfg) as conn:
         with conn.cursor() as cur:
-            cur.execute("UPDATE orders SET status = %s WHERE id = %s", ("Обработано", order_id))
+            cur.execute("UPDATE orders SET status = %s WHERE id = %s", ("Заказ доставлен в магазин по адресу Университетская площадь, д.1.", order_id))
         conn.commit()
 
 

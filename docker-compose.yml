@@ -9,6 +9,7 @@ services:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
   redis:
@@ -44,11 +45,24 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000" # API порт (через него Nginx и Java скачивают файлы)
-      - "9001:9001" # Web-интерфейс (чтобы ты мог зайти через браузер)
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     restart: unless-stopped
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio-seed.sh:/minio-seed.sh
+      - ./infra/generated-images/products:/seed/products
+    entrypoint: /bin/sh
+    command: -c "sh /minio-seed.sh"
 
   auth-service:
       build: ./auth-service-go
@@ -79,8 +93,8 @@ services:
       - SHOP_MINIO_URL=http://minio:9000
       - SHOP_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - SHOP_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-      - SHOP_MINIO_BUCKET=products
-      - SHOP_MINIO_PUBLIC_BASE_PATH=http://localhost:3000/media
+      - SHOP_MINIO_BUCKET=shop-images
+      - SHOP_MINIO_PUBLIC_BASE_PATH=/media
 
   order-worker:
       build: ./order-worker-python
@@ -90,6 +104,9 @@ services:
         - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         - POSTGRES_HOST=postgres
         - RABBITMQ_HOST=rabbitmq
+        - RABBITMQ_USER=guest
+        - RABBITMQ_PASSWORD=guest
+        - RABBITMQ_QUEUE=orders.queue
       depends_on:
         - postgres
         - rabbitmq

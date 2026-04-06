@@ -1,4 +1,4 @@
-package main.java.com.rest.backend.k8s_app;
+package com.rest.backend.k8s_app.service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: hello-app-container
-          image: skip1987/k8s-app:v1
+          image: skip1987/k8s-app:v3
           ports:
             - containerPort: 8080
           env:

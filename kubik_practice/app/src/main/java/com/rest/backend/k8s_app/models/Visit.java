@@ -1,4 +1,4 @@
-package com.rest.backend.k8s_app.models;
+package com.rest.backend.k8s_app.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

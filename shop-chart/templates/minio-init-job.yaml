@@ -13,12 +13,8 @@ spec:
             - /bin/sh
             - -c
             - |
-              # Ждем пару секунд, чтобы MinIO точно успел запуститься
               sleep 5;
-              # Авторизуемся в нашем MinIO (логины из твоего minio.yaml)
               mc alias set myminio http://minio:9000 minioadmin minioadmin;
-              # Создаем бакет, если его вдруг нет (на будущее)
               mc mb myminio/shop-images || true;
-              # САМОЕ ГЛАВНОЕ: Делаем бакет публичным для скачивания!
               mc policy set download myminio/shop-images;
               echo "Policy successfully set to download for shop-images bucket!";

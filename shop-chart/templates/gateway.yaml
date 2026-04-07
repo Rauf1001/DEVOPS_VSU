@@ -44,7 +44,6 @@ spec:
   parentRefs:
     - name: shop-gateway
   rules:
-    # 1. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ -> ИДЕТ В GO
     - matches:
         - path:
             type: PathPrefix
@@ -54,13 +53,11 @@ spec:
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              # Меняем /api/auth на /auth (отрезаем /api)
               replacePrefixMatch: /
       backendRefs:
         - name: auth-go-svc
           port: 80
 
-    # 2. ОСТАЛЬНОЕ API (товары, заказы) -> ИДЕТ В JAVA
     - matches:
         - path:
             type: PathPrefix
@@ -69,7 +66,6 @@ spec:
         - name: backend-java-svc
           port: 80
 
-    # 3. КАРТИНКИ -> ИДУТ В MINIO
     - matches:
         - path:
             type: PathPrefix
@@ -78,7 +74,6 @@ spec:
         - name: minio
           port: 9000
 
-    # 4. ФИЛЬТР ДЛЯ /media -> ИДЕТ В MINIO
     - matches:
         - path:
             type: PathPrefix
@@ -93,7 +88,6 @@ spec:
         - name: minio
           port: 9000
 
-    # 5. ФРОНТЕНД -> РЕАКТ
     - matches:
         - path:
             type: PathPrefix

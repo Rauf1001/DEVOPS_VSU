@@ -7,8 +7,10 @@
 
 В рамках лабораторной работы был развернут воспроизводимый контейнерный стенд интернет-магазина (Microshop Platform) с микросервисной архитектурой. Проект запускается одной командой и представляет собой единую систему, состоящую из прикладных и инфраструктурных сервисов.
 
+* [Практическое задание №2](#практическое-задание-2)
+* [Практическое задание №3](#практическое-задание-3)
+* [Практическое задание №4 - Helm, CRD & RBAC](#практическое-задание-4---helm-crd--rbac)---
 ---
-
 ## 📁 Структура репозитория (Deliverables)
 
 * `auth-service-go/Dockerfile` — сервис авторизации.
@@ -65,3 +67,189 @@ docker compose logs -f postgres
 docker compose logs -f minio
 docker compose logs minio-setup
 docker compose logs -f order-worker
+
+## Практическое задание №2
+Была прописана и использована следующая архитектура
+📁 kubik_practice/
+├── 📁 app/                           
+│    ├── 📄 Dockerfile                
+│    ├── 📄 pom.xml
+│    └── 📁 src/
+│         ├── 📁 main/
+│         │    ├── 📁 java/com/rest/backend/k8s_app/
+│         │    │    ├── 📄 K8sAppApplication.java     
+│         │    │    └── 📁 controller/
+│         │    │         └── 📄 HelloController.java   
+│         │    └── 📁 resources/
+│         │         └── 📄 application.properties
+│         └── 📁 test/java/com/rest/backend/k8s_app/
+│              └── 📄 K8sAppApplicationTests.java
+│
+└── 📁 manifests/                     
+├── 📄 1-configmap.yaml
+├── 📄 2-deployment.yaml
+├── 📄 3-service.yaml
+└── 📄 4-getaway.yaml
+
+
+Дальше через start.spring.io был создан pom.xml. Написан Dockerfile, и манифесты Deployment, ConfigMap, Service, Ingress.
+Собран Докерфайл по шаблону docker build -t skip1987/k8s-app:v1 .
+Дальше через Minikube minikube start
+minikube addons enable ingress
+kubectl apply -f manifests/
+И проброшен туннель для подключения minikube tunnel
+![](images/14.png)
+
+# Практическое задание №3
+Были дописаны новые джава классы
+-Visit
+-VisitRepository
+Прописаны две новые зависимости в pom.xml
+Добавлен блок env  с прописанными данным БД в 2-deployment.yaml
+Добавлен gateway.yaml  Gateway(classname eg) и HTTPRoute
+Добавлен postgres.yaml прописаны настройки бд порт и объем памяти
+Смысл в том чтобы на виртуальной машине МиниКубика должна быть выделенная часть памяти, которая никогда не будет стираться и на которой будет храниться бд.
+Были прописаны 3 версии в ДокерХабе
+
+![](images/15.png)
+![](images/16.png)
+
+# Использованные Команды
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+kubectl get pods
+kubectl logs deploy/hello-app-deployment
+kubectl apply -f manifests/2-deployment.yaml
+kubectl delete ingress hello-app-ingress
+ingress.networking.k8s.io "hello-app-ingress" deleted from default namespace
+kubectl apply --server-side -f https://github.com/envoyproxy/gateway/releases/download/v1.0.0/install.yaml
+kubectl get gateway
+kubectl get svc -A | grep envoy
+kubectl get pods -n envoy-gateway-system
+kubectl describe gateway my-gateway
+kubectl get pvc
+kubectl apply -f
+- <<
+  -EOF
+  apiVersion: gateway.networking.k8s.io/v1
+  kind: GatewayClass
+  metadata:
+  name: eg
+  spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  EOF
+  gatewayclass.gateway.networking.k8s.io/eg created
+
+  
+
+## Практическое задание №4 - Helm, CRD & RBAC
+
+### 📁 Структура Helm-чарта (novashop)
+Вся инфраструктура теперь разворачивается одной командой `helm upgrade --install novashop ./shop-chart`.
+```text
+
+shop-chart/
+├── Chart.yaml             # Описание чарта
+├── values.yaml            # Общие переменные (версии, порты)
+├── infra/                 # Скрипты инициализации БД и картинок
+└── templates/
+    ├── auth-go.yaml       # Микросервис авторизации (Go)
+    ├── backend-java.yaml  # Основное API (Java Spring)
+    ├── frontend-react.yaml# UI (React)
+    ├── worker-python.yaml # Воркер очередей (Python)
+    ├── postgres.yaml      # CRD для CloudNativePG (БД)
+    ├── init-db-configmap.yaml # Инициализация таблиц БД
+    ├── rabbitmq.yaml      # Брокер сообщений
+    ├── minio.yaml         # S3 Хранилище
+    ├── etcd.yaml          # K-V хранилище для Go-сервиса
+    ├── gateway.yaml       # Настройки Gateway API и HTTPRoute
+    └── cert-issuer.yaml   # CRD для CertManager (самоподписанные сертификаты)
+
+```
+1.Перевод манифестов на Helm и запуск:
+![](images/17.png)
+2.Использование CloudNativePG оператора:
+![](images/18.png)
+3.Gateway API и CertManager (HTTPS):
+![](images/19.png)
+![](images/20.png)
+
+
+
+1. **Проблема с образами Bitnami (RabbitMQ/MinIO):** * **Проблема:** При попытке использовать чарты/образы Bitnami с тегом `latest` кластер выдавал ошибку `manifest unknown` и `ImagePullBackOff`.
+
+    - **Решение:** Отказ от нестабильных сторонних чартов. В наш собственный Helm-чарт были написаны легковесные манифесты с использованием официальных стабильных образов (`rabbitmq:3-management` и `minio/minio:latest`).
+
+2. **Конфликт прав владельца таблиц PostgreSQL (`must be owner`):**
+
+    - **Проблема:** При развертывании через CloudNativePG, init-скрипты выполнялись от имени суперпользователя, а Java-бэкенд подключался как `shop_user` и падал при попытке изменить структуру (`ALTER TABLE`).
+
+    - **Решение:** Из Java-кода была полностью убрана логика миграций. В SQL-скрипт инициализации добавлены права: `ALTER TABLE ... OWNER TO shop_user;`. Для чистого применения был принудительно удален старый PVC базы данных (`kubectl delete pvc --all`).
+
+3. **Маршрутизация и права доступа к MinIO (Картинки не грузились):**
+
+    - **Проблема:** Фронтенд запрашивал картинки по пути `/media/shop-images/...`. Gateway отправлял это на React, который возвращал HTML (статус 200), из-за чего иконки были "битыми". Позже сам MinIO выдавал `403 Access Denied`. Кроме того, в образе MinIO отсутствовал архиватор `tar`, из-за чего не работала команда `kubectl cp`.
+
+    - **Решение:** * В Gateway API добавлен фильтр `URLRewrite`, который на лету отрезал `/media` и отправлял запрос напрямую в под MinIO.
+
+        - Написан bash-скрипт (через `kubectl exec -i minio-seeder -- mc pipe`), который передавал файлы в бакет напрямую через поток, обходя отсутствие `tar`.
+
+        - Использована команда `mc anonymous set download`, чтобы сделать бакет публичным на чтение.
+
+4. **Ошибка 404 и 503 при регистрации (Маршрутизация к Go-сервису):**
+
+    - **Проблема:** Gateway перехватывал запросы `/api/auth/register` и отправлял их в Java, которая выдавала 404. После направления в Go-сервис, он снова выдавал 404, а затем 503.
+
+    - **Решение:** * В `gateway.yaml` настроена строгая иерархия (сначала точный `/api/auth`, затем общий `/api`).
+
+        - Применен `ReplacePrefixMatch` для отсечения `/api` перед передачей в Go.
+
+        - Выявлено отсутствие базы данных `etcd`, необходимой для Go-сервиса. Был добавлен новый манифест `etcd.yaml`, после чего регистрация прошла успешно.
+# Использованные команды
+В процессе отладки и деплоя активно использовались следующие команды:
+
+**Управление Helm:**
+
+- `helm upgrade --install novashop ./shop-chart` — установка/обновление релиза
+
+- `helm uninstall novashop` — удаление релиза
+
+- `helm ls` — просмотр установленных релизов
+
+
+**Управление и дебаг Kubernetes (kubectl):**
+
+- `kubectl get pods` — статус всех подов
+
+- `kubectl get svc` — статус сервисов
+
+- `kubectl get cluster` — статус кластеров CloudNativePG
+
+- `kubectl get certificates` — проверка выдачи сертификатов (CertManager)
+
+- `kubectl get gateway,httproute` — проверка правил маршрутизации
+
+- `kubectl describe pod <pod-name>` — детальная информация (поиск причин `ImagePullBackOff`)
+
+- `kubectl logs -l app=backend-java --tail=50` — чтение логов по меткам
+
+- `kubectl rollout restart deployment <name>` — мягкий перезапуск деплоймента
+
+- `kubectl delete pvc --all` — удаление всех дисков (сброс состояния баз данных)
+
+- `kubectl patch pvc <name> -p '{"metadata":{"finalizers":null}}'` — принудительное удаление зависших PVC
+
+
+**Работа с MinIO внутри кластера:**
+
+- `minikube tunnel` — проброс портов сервисов типа LoadBalancer (Gateway) на хост
+
+- `kubectl port-forward svc/minio 9001:9001` — прямой проброс порта для доступа к админке MinIO
+
+- `kubectl run minio-seeder --image=minio/mc --restart=Never -- sleep 300` — запуск временного пода-утилиты
+
+- `cat file.svg | kubectl exec -i minio-seeder -- mc pipe myminio/shop-images/...` — передача файла напрямую в S3 хранилище через пайпы (обход отсутствия утилиты tar).
+
+
+
+
+

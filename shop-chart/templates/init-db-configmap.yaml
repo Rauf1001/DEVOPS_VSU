@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+data:
+  01-init.sql: |-
+    {{- .Files.Get "infra/postgres-init/01-init.sql" | nindent 4 }}

@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.global.dbClusterName }}
+spec:
+  instances: {{ .Values.database.instances }}
+  storage:
+    size: {{ .Values.database.storage }}
+  bootstrap:
+    initdb:
+      database: shop_db
+      owner: shop_user
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: postgres-init-script
+            key: 01-init.sql

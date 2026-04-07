@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-go
+spec:
+  replicas: {{ .Values.auth.replicaCount }}
+  selector:
+    matchLabels:
+      app: auth-go
+  template:
+    metadata:
+      labels:
+        app: auth-go
+    spec:
+      containers:
+        - name: auth
+          image: "{{ .Values.auth.image }}:{{ .Values.auth.tag }}"
+          ports:
+            - containerPort: {{ .Values.auth.port }}
+          env:
+            - name: REDIS_ADDR
+              value: "redis-master:6379"
+            - name: DB_HOST
+              value: "{{ .Values.global.dbClusterName }}-rw"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.dbClusterName }}-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.dbClusterName }}-app
+                  key: password
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-go-svc
+spec:
+  selector:
+    app: auth-go
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: {{ .Values.auth.port }}

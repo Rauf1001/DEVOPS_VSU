@@ -70,6 +70,7 @@ docker compose logs -f order-worker
 
 ## Практическое задание №2
 Была прописана и использована следующая архитектура
+```text
 📁 kubik_practice/
 ├── 📁 app/                           
 │    ├── 📄 Dockerfile                
@@ -90,7 +91,7 @@ docker compose logs -f order-worker
 ├── 📄 2-deployment.yaml
 ├── 📄 3-service.yaml
 └── 📄 4-getaway.yaml
-
+```
 
 Дальше через start.spring.io был создан pom.xml. Написан Dockerfile, и манифесты Deployment, ConfigMap, Service, Ingress.
 Собран Докерфайл по шаблону docker build -t skip1987/k8s-app:v1 .
@@ -115,30 +116,30 @@ kubectl apply -f manifests/
 ![](images/16.png)
 
 # Использованные Команды
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
-kubectl get pods
-kubectl logs deploy/hello-app-deployment
-kubectl apply -f manifests/2-deployment.yaml
-kubectl delete ingress hello-app-ingress
-ingress.networking.k8s.io "hello-app-ingress" deleted from default namespace
-kubectl apply --server-side -f https://github.com/envoyproxy/gateway/releases/download/v1.0.0/install.yaml
-kubectl get gateway
-kubectl get svc -A | grep envoy
-kubectl get pods -n envoy-gateway-system
-kubectl describe gateway my-gateway
-kubectl get pvc
-kubectl apply -f
-- <<
-  -EOF
-  apiVersion: gateway.networking.k8s.io/v1
-  kind: GatewayClass
-  metadata:
-  name: eg
-  spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
-  EOF
-  gatewayclass.gateway.networking.k8s.io/eg created
 
+* `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`
+* `kubectl get pods`
+* `kubectl logs deploy/hello-app-deployment`
+* `kubectl apply -f manifests/2-deployment.yaml`
+* `kubectl delete ingress hello-app-ingress`
+* `kubectl apply --server-side -f https://github.com/envoyproxy/gateway/releases/download/v1.0.0/install.yaml`
+* `kubectl get gateway`
+* `kubectl get svc -A | grep envoy`
+* `kubectl get pods -n envoy-gateway-system`
+* `kubectl describe gateway my-gateway`
+* `kubectl get pvc`
+
+Создание `GatewayClass`:
+```bash
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+EOF
+```
   
 
 ## Практическое задание №4 - Helm, CRD & RBAC
